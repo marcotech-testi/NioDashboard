@@ -8,7 +8,12 @@ import { ChannelDonutChart } from "@/components/ChannelDonutChart";
 import { TrendLineChart } from "@/components/TrendLineChart";
 import { DetailTable } from "@/components/DetailTable";
 import { recomputePercentages } from "@/lib/filterNioTags";
+import { MIN_DATE } from "@/lib/dateRules";
 import type { PeriodPreset, StatsResponse } from "@/types/stats";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+const MIN_DATE_LABEL = format(new Date(`${MIN_DATE}T00:00:00`), "d 'de' MMMM 'de' yyyy", { locale: ptBR });
 
 export default function DashboardPage() {
   const [period, setPeriod] = useState<PeriodPreset>(1);
@@ -68,6 +73,7 @@ export default function DashboardPage() {
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-widest text-text-muted">NIO</p>
         <h1 className="text-3xl font-semibold brand-gradient-text">Indicadores de Atendimento</h1>
+        <p className="text-sm text-text-muted">Histórico de dados disponível a partir de {MIN_DATE_LABEL}.</p>
       </header>
 
       <FilterBar
@@ -91,8 +97,9 @@ export default function DashboardPage() {
       )}
 
       {!loading && !error && rows.length === 0 && (
-        <div className="card p-8 text-center">
+        <div className="card p-8 text-center space-y-1">
           <p className="text-text-muted">Nenhum atendimento NIO encontrado no período selecionado.</p>
+          <p className="text-text-muted text-xs">Lembrete: o histórico só cobre datas a partir de {MIN_DATE_LABEL}.</p>
         </div>
       )}
 
