@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import type { NioStatRow } from "@/types/stats";
 import { colorForKey } from "@/lib/chartColors";
+import { formatTagLabel } from "@/lib/filterNioTags";
 
 type TagChannelBarChartProps = {
   rows: NioStatRow[];
@@ -37,7 +38,9 @@ export function TagChannelBarChart({ rows }: TagChannelBarChartProps) {
 
   return (
     <div className="card p-5">
-      <h3 className="text-sm font-medium text-text-muted mb-4">Volume por tag, com breakdown por canal</h3>
+      <h3 className="text-sm font-medium text-text-muted mb-4">
+        Volume por classificação, com breakdown por canal
+      </h3>
       <ResponsiveContainer width="100%" height={360}>
         <BarChart data={data} layout="vertical" margin={{ left: 24, right: 16, top: 8, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#2a2f2a" horizontal={false} />
@@ -49,10 +52,12 @@ export function TagChannelBarChart({ rows }: TagChannelBarChartProps) {
             fontSize={11}
             width={160}
             tick={{ fill: "#97a098" }}
+            tickFormatter={(value) => formatTagLabel(String(value))}
           />
           <Tooltip
             contentStyle={{ background: "#181c19", border: "1px solid #2a2f2a", borderRadius: 8 }}
             labelStyle={{ color: "#f4f6f4" }}
+            labelFormatter={(label) => formatTagLabel(String(label))}
           />
           <Legend />
           {channels.map((channel) => (

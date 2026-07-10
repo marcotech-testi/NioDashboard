@@ -1,6 +1,7 @@
 "use client";
 
 import { PERIOD_PRESETS, type PeriodPreset } from "@/types/stats";
+import { formatTagLabel } from "@/lib/filterNioTags";
 import { MultiSelectDropdown } from "./MultiSelectDropdown";
 
 type FilterBarProps = {
@@ -52,7 +53,13 @@ export function FilterBar({
         selected={selectedChannels}
         onChange={onChannelsChange}
       />
-      <MultiSelectDropdown label="Tag NIO" options={tags} selected={selectedTags} onChange={onTagsChange} />
+      <MultiSelectDropdown
+        label="Classificação"
+        options={tags}
+        selected={selectedTags}
+        onChange={onTagsChange}
+        formatOption={formatTagLabel}
+      />
     </div>
   );
 }

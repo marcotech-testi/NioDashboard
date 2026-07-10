@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { NioStatRow } from "@/types/stats";
+import { formatTagLabel } from "@/lib/filterNioTags";
 
 type DetailTableProps = {
   rows: NioStatRow[];
@@ -10,8 +11,10 @@ type DetailTableProps = {
 type SortKey = "tag" | "channel" | "total";
 
 function toCsv(rows: NioStatRow[]): string {
-  const header = "tag,canal,total,percentual";
-  const lines = rows.map((row) => `"${row.tag}","${row.channel}",${row.total},${row.percentage}`);
+  const header = "classificacao,canal,total,percentual";
+  const lines = rows.map(
+    (row) => `"${formatTagLabel(row.tag)}","${row.channel}",${row.total},${row.percentage}`,
+  );
   return [header, ...lines].join("\n");
 }
 
@@ -50,7 +53,7 @@ export function DetailTable({ rows }: DetailTableProps) {
   }
 
   const columns: { key: SortKey; label: string }[] = [
-    { key: "tag", label: "Tag" },
+    { key: "tag", label: "Classificação" },
     { key: "channel", label: "Canal" },
     { key: "total", label: "Total" },
   ];
@@ -89,7 +92,7 @@ export function DetailTable({ rows }: DetailTableProps) {
           <tbody>
             {sorted.map((row) => (
               <tr key={`${row.tag}|||${row.channel}`} className="border-b border-border/50">
-                <td className="py-2 pr-4">{row.tag}</td>
+                <td className="py-2 pr-4">{formatTagLabel(row.tag)}</td>
                 <td className="py-2 pr-4">{row.channel}</td>
                 <td className="py-2 pr-4">{row.total.toLocaleString("pt-BR")}</td>
                 <td className="py-2 text-text-muted">{row.percentage}%</td>

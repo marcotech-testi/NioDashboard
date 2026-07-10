@@ -53,6 +53,16 @@ export function recomputePercentages(rows: NioStatRow[]): NioStatRow[] {
   }));
 }
 
+/**
+ * A palavra "tag" e o prefixo "NIO_" são detalhes de implementação da API,
+ * não algo que o operador do dashboard precisa ver — no front a tag é
+ * exibida como "classificação do atendimento", com o prefixo removido.
+ */
+export function formatTagLabel(tag: string): string {
+  const withoutPrefix = tag.toUpperCase().startsWith(TAG_PREFIX) ? tag.slice(TAG_PREFIX.length) : tag;
+  return withoutPrefix.replace(/^_+/, "").replace(/_+/g, " ").trim() || tag;
+}
+
 /** Total agregado de atendimentos NIO (soma de todas as tags/canais) em um conjunto de linhas cru. */
 export function nioGrandTotal(raw: RawStatRow[]): number {
   return raw

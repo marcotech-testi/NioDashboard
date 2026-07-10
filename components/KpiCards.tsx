@@ -1,4 +1,5 @@
 import type { NioStatRow } from "@/types/stats";
+import { formatTagLabel } from "@/lib/filterNioTags";
 
 type KpiCardsProps = {
   rows: NioStatRow[];
@@ -25,8 +26,8 @@ export function KpiCards({ rows }: KpiCardsProps) {
   const cards = [
     { label: "Total de atendimentos", value: totalAtendimentos.toLocaleString("pt-BR") },
     { label: "Canal com maior volume", value: topChannel?.name ?? "—" },
-    { label: "Tag com maior volume", value: topTag?.name ?? "—" },
-    { label: "Tags NIO ativas", value: String(activeTags) },
+    { label: "Classificação com maior volume", value: topTag ? formatTagLabel(topTag.name) : "—" },
+    { label: "Classificações ativas", value: String(activeTags) },
   ];
 
   return (

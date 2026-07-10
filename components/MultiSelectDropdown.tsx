@@ -9,9 +9,17 @@ type MultiSelectDropdownProps = {
   /** null significa "todos selecionados" (nenhum filtro aplicado). */
   selected: Set<string> | null;
   onChange: (next: Set<string> | null) => void;
+  /** Formata o texto exibido de cada opção sem alterar o valor usado no filtro. */
+  formatOption?: (option: string) => string;
 };
 
-export function MultiSelectDropdown({ label, options, selected, onChange }: MultiSelectDropdownProps) {
+export function MultiSelectDropdown({
+  label,
+  options,
+  selected,
+  onChange,
+  formatOption = (option) => option,
+}: MultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useClickOutside(ref, () => setOpen(false));
@@ -66,7 +74,7 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Mult
                   onChange={() => toggle(option)}
                   className="accent-brand-green"
                 />
-                <span className="truncate">{option}</span>
+                <span className="truncate">{formatOption(option)}</span>
               </label>
             );
           })}
