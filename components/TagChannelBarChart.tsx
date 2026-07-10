@@ -40,19 +40,19 @@ export function TagChannelBarChart({ rows }: TagChannelBarChartProps) {
       <h3 className="text-sm font-medium text-text-muted mb-4">Volume por tag, com breakdown por canal</h3>
       <ResponsiveContainer width="100%" height={360}>
         <BarChart data={data} layout="vertical" margin={{ left: 24, right: 16, top: 8, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#26272f" horizontal={false} />
-          <XAxis type="number" stroke="#9a9ba6" fontSize={12} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#2a2f2a" horizontal={false} />
+          <XAxis type="number" stroke="#97a098" fontSize={12} />
           <YAxis
             type="category"
             dataKey="tag"
-            stroke="#9a9ba6"
+            stroke="#97a098"
             fontSize={11}
             width={160}
-            tick={{ fill: "#9a9ba6" }}
+            tick={{ fill: "#97a098" }}
           />
           <Tooltip
-            contentStyle={{ background: "#16171c", border: "1px solid #26272f", borderRadius: 8 }}
-            labelStyle={{ color: "#f3f4f7" }}
+            contentStyle={{ background: "#181c19", border: "1px solid #2a2f2a", borderRadius: 8 }}
+            labelStyle={{ color: "#f4f6f4" }}
           />
           <Legend />
           {channels.map((channel) => (

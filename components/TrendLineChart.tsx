@@ -17,18 +17,18 @@ export function TrendLineChart({ trend }: TrendLineChartProps) {
         <AreaChart data={trend} margin={{ left: 8, right: 16, top: 8, bottom: 8 }}>
           <defs>
             <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FF0064" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="#197DF5" stopOpacity={0.02} />
+              <stop offset="0%" stopColor="#34E37A" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#34E37A" stopOpacity={0.02} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#26272f" />
-          <XAxis dataKey="date" stroke="#9a9ba6" fontSize={12} />
-          <YAxis stroke="#9a9ba6" fontSize={12} allowDecimals={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#2a2f2a" />
+          <XAxis dataKey="date" stroke="#97a098" fontSize={12} />
+          <YAxis stroke="#97a098" fontSize={12} allowDecimals={false} />
           <Tooltip
-            contentStyle={{ background: "#16171c", border: "1px solid #26272f", borderRadius: 8 }}
-            labelStyle={{ color: "#f3f4f7" }}
+            contentStyle={{ background: "#181c19", border: "1px solid #2a2f2a", borderRadius: 8 }}
+            labelStyle={{ color: "#f4f6f4" }}
           />
-          <Area type="monotone" dataKey="total" stroke="#FF0064" fill="url(#trendFill)" strokeWidth={2} />
+          <Area type="monotone" dataKey="total" stroke="#34E37A" fill="url(#trendFill)" strokeWidth={2} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

@@ -34,7 +34,7 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Mult
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="card px-3 py-2 text-sm text-text hover:border-brand-blue/60 transition-colors min-w-40 text-left flex items-center justify-between gap-2"
+        className="card px-3 py-2 text-sm text-text hover:border-brand-green/60 transition-colors min-w-40 text-left flex items-center justify-between gap-2"
       >
         <span className="text-text-muted">{label}</span>
         <span className="font-medium">
@@ -46,7 +46,7 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Mult
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="w-full text-left px-2 py-1.5 text-xs text-brand-blue hover:bg-surface-hover rounded"
+            className="w-full text-left px-2 py-1.5 text-xs text-brand-green hover:bg-surface-hover rounded"
           >
             Selecionar todos
           </button>
@@ -64,7 +64,7 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Mult
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggle(option)}
-                  className="accent-brand-pink"
+                  className="accent-brand-green"
                 />
                 <span className="truncate">{option}</span>
               </label>

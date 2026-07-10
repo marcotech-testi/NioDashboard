@@ -4,16 +4,16 @@
  * trocas de filtro, sem depender de ordem/índice.
  */
 const PALETTE = [
-  "#FF0064",
-  "#197DF5",
-  "#3C19C8",
+  "#34E37A",
+  "#00BCD4",
   "#FFC81E",
-  "#00D746",
-  "#FA3200",
-  "#00D2EF",
   "#B388FF",
-  "#FF8A3D",
+  "#FA3200",
   "#4CD9C0",
+  "#FF8A3D",
+  "#6EE7B7",
+  "#5B8DEF",
+  "#E5484D",
 ];
 
 export function colorForKey(key: string): string {

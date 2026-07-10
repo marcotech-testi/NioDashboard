@@ -63,7 +63,7 @@ export function DetailTable({ rows }: DetailTableProps) {
           type="button"
           onClick={exportCsv}
           disabled={rows.length === 0}
-          className="text-xs px-3 py-1.5 rounded-lg border border-border hover:border-brand-blue/60 text-text-muted hover:text-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="text-xs px-3 py-1.5 rounded-lg border border-border hover:border-brand-green/60 text-text-muted hover:text-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Exportar CSV
         </button>

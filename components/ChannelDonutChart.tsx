@@ -29,12 +29,12 @@ export function ChannelDonutChart({ rows }: ChannelDonutChartProps) {
             paddingAngle={2}
           >
             {data.map((entry) => (
-              <Cell key={entry.channel} fill={colorForKey(entry.channel)} stroke="#0a0a0c" />
+              <Cell key={entry.channel} fill={colorForKey(entry.channel)} stroke="#0c0f0d" />
             ))}
           </Pie>
           <Tooltip
-            contentStyle={{ background: "#16171c", border: "1px solid #26272f", borderRadius: 8 }}
-            labelStyle={{ color: "#f3f4f7" }}
+            contentStyle={{ background: "#181c19", border: "1px solid #2a2f2a", borderRadius: 8 }}
+            labelStyle={{ color: "#f4f6f4" }}
           />
           <Legend />
         </PieChart>
