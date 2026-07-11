@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NIO | Indicadores de Atendimento",
+  title: "NIO | Indicadores SAC",
   description: "Dashboard de indicadores de atendimento da NIO",
 };
 

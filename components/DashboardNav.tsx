@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/", label: "Atendimento" },
-  { href: "/equipamentos", label: "Equipamentos" },
+  { href: "/", label: "SAC" },
+  { href: "/equipamentos", label: "HC" },
 ];
 
 export function DashboardNav() {
