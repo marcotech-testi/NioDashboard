@@ -92,6 +92,15 @@ Com ~19.800 dispositivos e 50 por página, isso significa **~397 chamadas** por 
 
 O campo `online` **não existe** no documento do dispositivo — status de conexão só está disponível via o endpoint de contagem agregada (3.1) ou via filtros `online`/`offline`/`unstable` na busca paginada, não como um campo simples no retorno.
 
+### Fabricantes ignorados **[Novo]**
+
+A base real tem 1 dispositivo `vendor: "TP-Link"` no meio de ~19.800 Huawei — não faz parte da operação (equipamento de teste). Ignorado em **todos** os indicadores (`lib/deviceFilters.ts`, constante `IGNORED_VENDORS`):
+
+- Contagens agregadas (3.1/3.2): cada chamada de contagem geral é acompanhada de uma chamada equivalente filtrada por `vendor=TP-Link` (mesmo filtro aceito pelo endpoint), e o resultado é subtraído do total antes de responder.
+- Varredura paginada (3.3): dispositivos com fabricante ignorado são descartados antes de calcular distribuição/médias.
+
+Nenhum dado desse fabricante aparece em nenhum KPI, gráfico ou média — nem mesmo no card "Total de dispositivos".
+
 ---
 
 # 4. KPIs

@@ -1,4 +1,5 @@
 import { fetchDeviceSearchPage } from "@/lib/flashmanApi";
+import { isIgnoredVendor } from "@/lib/deviceFilters";
 import type { DeviceProjection, NamedCount } from "@/types/devices";
 
 /** Não dispara todas as ~397 páginas de uma vez — evita sobrecarregar o Flashman. */
@@ -51,12 +52,18 @@ function countBy(devices: DeviceProjection[], key: "vendor" | "model" | "install
     .sort((a, b) => b.count - a.count);
 }
 
-/** Médias ignoram dispositivos sem RX/TX (tipicamente equipamentos sem PON). */
+/**
+ * Médias ignoram dispositivos sem RX/TX (tipicamente equipamentos sem PON).
+ * Fabricantes ignorados (lib/deviceFilters.ts) são descartados antes de
+ * qualquer cálculo, então não aparecem em médias nem em distribuições.
+ */
 export function aggregateDevices(devices: DeviceProjection[]): DeviceAggregation {
-  const rxValues = devices
+  const relevant = devices.filter((device) => !isIgnoredVendor(device.vendor));
+
+  const rxValues = relevant
     .map((device) => device.pon_rxpower)
     .filter((value): value is number => typeof value === "number");
-  const txValues = devices
+  const txValues = relevant
     .map((device) => device.pon_txpower)
     .filter((value): value is number => typeof value === "number");
 
@@ -66,9 +73,9 @@ export function aggregateDevices(devices: DeviceProjection[]): DeviceAggregation
       txPower: average(txValues),
     },
     distribution: {
-      vendor: countBy(devices, "vendor"),
-      model: countBy(devices, "model"),
-      firmware: countBy(devices, "installed_release"),
+      vendor: countBy(relevant, "vendor"),
+      model: countBy(relevant, "model"),
+      firmware: countBy(relevant, "installed_release"),
     },
   };
 }

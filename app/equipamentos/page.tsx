@@ -80,7 +80,7 @@ export default function EquipmentsPage() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       <header className="space-y-3">
         <p className="text-xs uppercase tracking-widest text-text-muted">NIO</p>
-        <h1 className="text-3xl font-semibold brand-gradient-text">Dispositivos Flashman</h1>
+        <h1 className="text-3xl font-semibold brand-gradient-text">Dispositivos</h1>
         <DashboardNav />
       </header>
 

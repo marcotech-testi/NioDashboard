@@ -35,11 +35,9 @@ function sleep(ms: number): Promise<void> {
  * fetch cache do Next.js — evita duas camadas de cache com semânticas
  * diferentes brigando entre si.
  */
-async function flashmanFetch(path: string, searchParams: Record<string, string>): Promise<Response> {
+async function flashmanFetch(path: string, searchParams: URLSearchParams): Promise<Response> {
   const url = new URL(path, requireEnv("FLASHMAN_URL"));
-  for (const [key, value] of Object.entries(searchParams)) {
-    url.searchParams.set(key, value);
-  }
+  url.search = searchParams.toString();
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
@@ -72,9 +70,17 @@ async function flashmanFetch(path: string, searchParams: Record<string, string>)
  * Contagens já agregadas pelo Flashman — não requer baixar dispositivo por
  * dispositivo. Sem `signal`, retorna online/offline/instável/total gerais;
  * com `signal`, filtra por classificação de sinal (`good`/`weak`/`bad`/`noSignal`).
+ * `vendors`, quando informado, restringe a contagem a esses fabricantes —
+ * usado para descontar fabricantes ignorados (ver lib/deviceFilters.ts).
  */
-export async function fetchConnectionStatus(signal?: SignalQuality): Promise<ConnectionStatusCounts> {
-  const params: Record<string, string> = signal ? { ponRxPower: signal } : {};
+export async function fetchConnectionStatus(
+  signal?: SignalQuality,
+  vendors?: string[],
+): Promise<ConnectionStatusCounts> {
+  const params = new URLSearchParams();
+  if (signal) params.set("ponRxPower", signal);
+  for (const vendor of vendors ?? []) params.append("vendor", vendor);
+
   const res = await flashmanFetch("/api/v3/device/connection-status/v2", params);
   const data = await res.json();
   return {
@@ -87,10 +93,11 @@ export async function fetchConnectionStatus(signal?: SignalQuality): Promise<Con
 
 /** Uma página (máx. 50 dispositivos) da busca, com projeção de campos para reduzir payload. */
 export async function fetchDeviceSearchPage(page: number): Promise<DeviceSearchPage> {
-  const res = await flashmanFetch("/api/v3/device/search/", {
+  const params = new URLSearchParams({
     fields: SEARCH_FIELDS,
     page: String(page),
     pageLimit: String(PAGE_LIMIT),
   });
+  const res = await flashmanFetch("/api/v3/device/search/", params);
   return (await res.json()) as DeviceSearchPage;
 }
