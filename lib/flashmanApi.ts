@@ -1,7 +1,7 @@
 import { requireEnv } from "@/lib/env";
 import type { ConnectionStatusCounts, DeviceSearchPage, SignalQuality } from "@/types/devices";
 
-const SEARCH_FIELDS = "vendor;model;installed_release;pon_rxpower;pon_txpower";
+const SEARCH_FIELDS = "vendor;model;installed_release;pon_rxpower;pon_txpower;serial_tr069";
 const PAGE_LIMIT = 50;
 
 export class FlashmanApiError extends Error {
@@ -66,20 +66,34 @@ async function flashmanFetch(path: string, searchParams: URLSearchParams): Promi
   throw new Error("unreachable");
 }
 
+export type ConnectionStatusFilter = {
+  /** Restringe a contagem a esses fabricantes — usado para descontar
+   * fabricantes ignorados no modo "base inteira" (lib/deviceFilters.ts). */
+  vendors?: string[];
+  /** Restringe a contagem a esses seriais TR-069 — usado no modo "lista de
+   * inclusão" (TRACKED_SERIALS em lib/deviceFilters.ts). */
+  serials?: string[];
+};
+
 /**
  * Contagens já agregadas pelo Flashman — não requer baixar dispositivo por
  * dispositivo. Sem `signal`, retorna online/offline/instável/total gerais;
  * com `signal`, filtra por classificação de sinal (`good`/`weak`/`bad`/`noSignal`).
- * `vendors`, quando informado, restringe a contagem a esses fabricantes —
- * usado para descontar fabricantes ignorados (ver lib/deviceFilters.ts).
  */
 export async function fetchConnectionStatus(
   signal?: SignalQuality,
-  vendors?: string[],
+  filter?: ConnectionStatusFilter,
 ): Promise<ConnectionStatusCounts> {
+  const vendors = filter?.vendors ?? [];
+  const serials = filter?.serials ?? [];
+
   const params = new URLSearchParams();
   if (signal) params.set("ponRxPower", signal);
-  for (const vendor of vendors ?? []) params.append("vendor", vendor);
+  for (const vendor of vendors) params.append("vendor", vendor);
+  for (const serial of serials) params.append("serial", serial);
+  // `or` combina campos DIFERENTES com OU; múltiplos valores do MESMO campo
+  // (ex.: vários `serial=`) já são OU entre si por padrão — testado ao vivo.
+  if (vendors.length > 0 && serials.length > 0) params.set("or", "true");
 
   const res = await flashmanFetch("/api/v3/device/connection-status/v2", params);
   const data = await res.json();
@@ -100,4 +114,18 @@ export async function fetchDeviceSearchPage(page: number): Promise<DeviceSearchP
   });
   const res = await flashmanFetch("/api/v3/device/search/", params);
   return (await res.json()) as DeviceSearchPage;
+}
+
+/** Documento completo (não sanitizado) de um dispositivo pelo serial TR-069.
+ * `null` quando não encontrado (404) — erros de fato ainda lançam. */
+export async function fetchDeviceBySerial(serial: string): Promise<Record<string, unknown> | null> {
+  const params = new URLSearchParams();
+  try {
+    const res = await flashmanFetch(`/api/v3/device/serial-tr069/${encodeURIComponent(serial)}/`, params);
+    const data = await res.json();
+    return (data.device as Record<string, unknown>) ?? null;
+  } catch (error) {
+    if (error instanceof FlashmanApiError && error.status === 404) return null;
+    throw error;
+  }
 }

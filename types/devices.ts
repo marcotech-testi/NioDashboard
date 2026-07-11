@@ -15,6 +15,45 @@ export type DeviceProjection = {
   installed_release?: string;
   pon_rxpower?: number;
   pon_txpower?: number;
+  serial_tr069?: string;
+};
+
+/** Um WAN do dispositivo, só os campos seguros pra exibir (sem credenciais). */
+export type DeviceWanDetail = {
+  connectionType: string;
+  status: string;
+  ipv4: string | null;
+};
+
+/** Uma rede Wi-Fi do dispositivo, sem senha. */
+export type DeviceWifiDetail = {
+  ssid: string;
+  band: string;
+  channel: string;
+  status: string;
+};
+
+/**
+ * Retorno sanitizado de uma busca por serial — allowlist explícito de campos
+ * seguros. O documento bruto da API tem senha de Wi-Fi, senha de admin,
+ * senha PPPoE etc.; nada disso deve chegar ao front.
+ */
+export type DeviceDetail = {
+  serialTr069: string;
+  mac: string;
+  vendor: string;
+  model: string;
+  installedRelease: string;
+  online: boolean;
+  unstableConnection: boolean;
+  lastContact: string | null;
+  sysUpTimeSeconds: number | null;
+  ponRxPower: number | null;
+  ponTxPower: number | null;
+  ponTemperature: number | null;
+  contractReference: string | null;
+  wans: DeviceWanDetail[];
+  wifi: DeviceWifiDetail[];
 };
 
 export type DeviceSearchPage = {

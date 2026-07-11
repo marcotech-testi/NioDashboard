@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FlashmanApiError, fetchConnectionStatus } from "@/lib/flashmanApi";
-import { aggregateDevices, fetchAllDeviceProjections } from "@/lib/aggregateDevices";
+import {
+  aggregateDevices,
+  fetchAllDeviceProjections,
+  fetchTrackedDeviceProjections,
+} from "@/lib/aggregateDevices";
 import { getEquipmentsSummary } from "@/lib/equipmentsCache";
-import { IGNORED_VENDORS } from "@/lib/deviceFilters";
-import type { ConnectionStatusCounts, EquipmentsSummary } from "@/types/devices";
+import { hasTrackedSerialsList, IGNORED_VENDORS, TRACKED_SERIALS } from "@/lib/deviceFilters";
+import type { ConnectionStatusCounts, DeviceProjection, EquipmentsSummary } from "@/types/devices";
 
 function subtractCounts(a: ConnectionStatusCounts, b: ConnectionStatusCounts): ConnectionStatusCounts {
   return {
@@ -14,43 +18,30 @@ function subtractCounts(a: ConnectionStatusCounts, b: ConnectionStatusCounts): C
   };
 }
 
-async function computeEquipmentsSummary(): Promise<EquipmentsSummary> {
-  const [total, good, weak, bad, noSignal, ignoredTotal, ignoredGood, ignoredWeak, ignoredBad, ignoredNoSignal, devices] =
-    await Promise.all([
-      fetchConnectionStatus(),
-      fetchConnectionStatus("good"),
-      fetchConnectionStatus("weak"),
-      fetchConnectionStatus("bad"),
-      fetchConnectionStatus("noSignal"),
-      fetchConnectionStatus(undefined, IGNORED_VENDORS),
-      fetchConnectionStatus("good", IGNORED_VENDORS),
-      fetchConnectionStatus("weak", IGNORED_VENDORS),
-      fetchConnectionStatus("bad", IGNORED_VENDORS),
-      fetchConnectionStatus("noSignal", IGNORED_VENDORS),
-      fetchAllDeviceProjections(),
-    ]);
-
-  const adjustedTotal = subtractCounts(total, ignoredTotal);
-  const adjustedGood = subtractCounts(good, ignoredGood);
-  const adjustedWeak = subtractCounts(weak, ignoredWeak);
-  const adjustedBad = subtractCounts(bad, ignoredBad);
-  const adjustedNoSignal = subtractCounts(noSignal, ignoredNoSignal);
-
+function summaryFromCounts(
+  counts: {
+    total: ConnectionStatusCounts;
+    good: ConnectionStatusCounts;
+    weak: ConnectionStatusCounts;
+    bad: ConnectionStatusCounts;
+    noSignal: ConnectionStatusCounts;
+  },
+  devices: DeviceProjection[],
+): EquipmentsSummary {
   const aggregation = aggregateDevices(devices);
-
   return {
     fetchedAt: new Date().toISOString(),
     counts: {
-      total: adjustedTotal.totalCount,
-      online: adjustedTotal.onlineCount,
-      offline: adjustedTotal.offlineCount,
-      unstable: adjustedTotal.unstableCount,
+      total: counts.total.totalCount,
+      online: counts.total.onlineCount,
+      offline: counts.total.offlineCount,
+      unstable: counts.total.unstableCount,
     },
     signal: {
-      good: adjustedGood.totalCount,
-      weak: adjustedWeak.totalCount,
-      bad: adjustedBad.totalCount,
-      noSignal: adjustedNoSignal.totalCount,
+      good: counts.good.totalCount,
+      weak: counts.weak.totalCount,
+      bad: counts.bad.totalCount,
+      noSignal: counts.noSignal.totalCount,
     },
     averages: aggregation.averages,
     distribution: aggregation.distribution,
@@ -58,12 +49,62 @@ async function computeEquipmentsSummary(): Promise<EquipmentsSummary> {
   };
 }
 
+/** Base inteira menos os fabricantes ignorados (lib/deviceFilters.ts). */
+async function computeFromFullFleet(): Promise<EquipmentsSummary> {
+  const [total, good, weak, bad, noSignal, ignoredTotal, ignoredGood, ignoredWeak, ignoredBad, ignoredNoSignal, devices] =
+    await Promise.all([
+      fetchConnectionStatus(),
+      fetchConnectionStatus("good"),
+      fetchConnectionStatus("weak"),
+      fetchConnectionStatus("bad"),
+      fetchConnectionStatus("noSignal"),
+      fetchConnectionStatus(undefined, { vendors: IGNORED_VENDORS }),
+      fetchConnectionStatus("good", { vendors: IGNORED_VENDORS }),
+      fetchConnectionStatus("weak", { vendors: IGNORED_VENDORS }),
+      fetchConnectionStatus("bad", { vendors: IGNORED_VENDORS }),
+      fetchConnectionStatus("noSignal", { vendors: IGNORED_VENDORS }),
+      fetchAllDeviceProjections(),
+    ]);
+
+  return summaryFromCounts(
+    {
+      total: subtractCounts(total, ignoredTotal),
+      good: subtractCounts(good, ignoredGood),
+      weak: subtractCounts(weak, ignoredWeak),
+      bad: subtractCounts(bad, ignoredBad),
+      noSignal: subtractCounts(noSignal, ignoredNoSignal),
+    },
+    devices,
+  );
+}
+
+/** Só os dispositivos em TRACKED_SERIALS (lib/deviceFilters.ts) — lista de inclusão. */
+async function computeFromTrackedSerials(): Promise<EquipmentsSummary> {
+  const serials = { serials: TRACKED_SERIALS };
+  const [total, good, weak, bad, noSignal, devices] = await Promise.all([
+    fetchConnectionStatus(undefined, serials),
+    fetchConnectionStatus("good", serials),
+    fetchConnectionStatus("weak", serials),
+    fetchConnectionStatus("bad", serials),
+    fetchConnectionStatus("noSignal", serials),
+    fetchTrackedDeviceProjections(TRACKED_SERIALS),
+  ]);
+
+  return summaryFromCounts({ total, good, weak, bad, noSignal }, devices);
+}
+
+function computeEquipmentsSummary(): Promise<EquipmentsSummary> {
+  return hasTrackedSerialsList() ? computeFromTrackedSerials() : computeFromFullFleet();
+}
+
 /**
- * Proxy server-side para a API do Flashman. A base (~19.800 dispositivos)
- * não cabe em uma única chamada (máx. 50/página); combinamos contagens
- * agregadas (leves, já descontando os fabricantes ignorados em
- * lib/deviceFilters.ts) com uma varredura paginada projetada só para o que
- * os KPIs de distribuição/média precisam.
+ * Proxy server-side para a API do Flashman. Dois modos, ver
+ * lib/deviceFilters.ts:
+ * - TRACKED_SERIALS vazia (padrão): varre a base inteira (~19.800
+ *   dispositivos, não cabe em uma única chamada — máx. 50/página) menos os
+ *   fabricantes ignorados.
+ * - TRACKED_SERIALS preenchida: os indicadores passam a ser calculados só a
+ *   partir desses seriais específicos, buscados um a um.
  *
  * Cache stale-while-revalidate (lib/equipmentsCache.ts): fora de
  * `?force=true`, nenhuma requisição espera a sincronização completa —

@@ -5,6 +5,7 @@ import { DashboardNav } from "@/components/DashboardNav";
 import { StatCardGrid } from "@/components/StatCardGrid";
 import { DistributionDonutChart } from "@/components/DistributionDonutChart";
 import { DistributionBarChart } from "@/components/DistributionBarChart";
+import { DeviceSearch } from "@/components/DeviceSearch";
 import type { EquipmentsSummary } from "@/types/devices";
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -82,6 +83,8 @@ export default function EquipmentsPage() {
         <h1 className="text-3xl font-semibold brand-gradient-text">Indicadores HC</h1>
         <DashboardNav />
       </header>
+
+      <DeviceSearch />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-text-muted">
