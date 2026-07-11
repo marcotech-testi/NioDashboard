@@ -4,8 +4,8 @@ import type { DeviceProjection, NamedCount } from "@/types/devices";
 /** Não dispara todas as ~397 páginas de uma vez — evita sobrecarregar o Flashman. */
 const CONCURRENCY = 25;
 
-export async function fetchAllDeviceProjections(noStore: boolean): Promise<DeviceProjection[]> {
-  const first = await fetchDeviceSearchPage(1, noStore);
+export async function fetchAllDeviceProjections(): Promise<DeviceProjection[]> {
+  const first = await fetchDeviceSearchPage(1);
   const all: DeviceProjection[] = [...first.devices];
   const totalPages = first.totalPages;
 
@@ -14,7 +14,7 @@ export async function fetchAllDeviceProjections(noStore: boolean): Promise<Devic
     while (nextPage <= totalPages) {
       const page = nextPage;
       nextPage += 1;
-      const result = await fetchDeviceSearchPage(page, noStore);
+      const result = await fetchDeviceSearchPage(page);
       all.push(...result.devices);
     }
   }

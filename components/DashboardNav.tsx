@@ -12,7 +12,7 @@ export function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 card p-1 w-fit">
+    <nav className="flex gap-1 bg-surface border border-border rounded-xl p-1.5 w-fit">
       {LINKS.map((link) => {
         const active = pathname === link.href;
         return (
@@ -21,8 +21,8 @@ export function DashboardNav() {
             href={link.href}
             className={
               active
-                ? "brand-gradient text-white px-3 py-1.5 rounded-lg text-sm font-medium"
-                : "px-3 py-1.5 rounded-lg text-sm text-text-muted hover:text-text transition-colors"
+                ? "brand-gradient text-white px-5 py-2 rounded-lg text-sm font-semibold"
+                : "px-5 py-2 rounded-lg text-sm font-medium text-text hover:bg-surface-hover transition-colors"
             }
           >
             {link.label}

@@ -1,8 +1,6 @@
 import { requireEnv } from "@/lib/env";
 import type { ConnectionStatusCounts, DeviceSearchPage, SignalQuality } from "@/types/devices";
 
-/** Cache de 5min pelo Next.js fetch cache, igual ao endpoint de stats da NIO. */
-const REVALIDATE_SECONDS = 300;
 const SEARCH_FIELDS = "vendor;model;installed_release;pon_rxpower;pon_txpower";
 const PAGE_LIMIT = 50;
 
@@ -31,11 +29,13 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function flashmanFetch(
-  path: string,
-  searchParams: Record<string, string>,
-  noStore: boolean,
-): Promise<Response> {
+/**
+ * Sempre `no-store`: o cache/staleness deste dashboard é controlado em
+ * lib/equipmentsCache.ts (stale-while-revalidate em memória), não pelo
+ * fetch cache do Next.js — evita duas camadas de cache com semânticas
+ * diferentes brigando entre si.
+ */
+async function flashmanFetch(path: string, searchParams: Record<string, string>): Promise<Response> {
   const url = new URL(path, requireEnv("FLASHMAN_URL"));
   for (const [key, value] of Object.entries(searchParams)) {
     url.searchParams.set(key, value);
@@ -45,7 +45,7 @@ async function flashmanFetch(
     try {
       const res = await fetch(url, {
         headers: { Authorization: authHeader() },
-        ...(noStore ? { cache: "no-store" } : { next: { revalidate: REVALIDATE_SECONDS } }),
+        cache: "no-store",
       });
 
       if (!res.ok) {
@@ -73,12 +73,9 @@ async function flashmanFetch(
  * dispositivo. Sem `signal`, retorna online/offline/instável/total gerais;
  * com `signal`, filtra por classificação de sinal (`good`/`weak`/`bad`/`noSignal`).
  */
-export async function fetchConnectionStatus(
-  signal: SignalQuality | undefined,
-  noStore: boolean,
-): Promise<ConnectionStatusCounts> {
+export async function fetchConnectionStatus(signal?: SignalQuality): Promise<ConnectionStatusCounts> {
   const params: Record<string, string> = signal ? { ponRxPower: signal } : {};
-  const res = await flashmanFetch("/api/v3/device/connection-status/v2", params, noStore);
+  const res = await flashmanFetch("/api/v3/device/connection-status/v2", params);
   const data = await res.json();
   return {
     totalCount: data.totalCount ?? 0,
@@ -89,11 +86,11 @@ export async function fetchConnectionStatus(
 }
 
 /** Uma página (máx. 50 dispositivos) da busca, com projeção de campos para reduzir payload. */
-export async function fetchDeviceSearchPage(page: number, noStore: boolean): Promise<DeviceSearchPage> {
-  const res = await flashmanFetch(
-    "/api/v3/device/search/",
-    { fields: SEARCH_FIELDS, page: String(page), pageLimit: String(PAGE_LIMIT) },
-    noStore,
-  );
+export async function fetchDeviceSearchPage(page: number): Promise<DeviceSearchPage> {
+  const res = await flashmanFetch("/api/v3/device/search/", {
+    fields: SEARCH_FIELDS,
+    page: String(page),
+    pageLimit: String(PAGE_LIMIT),
+  });
   return (await res.json()) as DeviceSearchPage;
 }
