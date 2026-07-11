@@ -1,4 +1,5 @@
 import type { RawStatRow } from "@/types/stats";
+import { requireEnv } from "@/lib/env";
 
 const GROUPER_ONE = "tag";
 const GROUPER_TWO = "canal";
@@ -15,14 +16,6 @@ export class StatsApiError extends Error {
     this.name = "StatsApiError";
     this.status = status;
   }
-}
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Variável de ambiente ausente: ${name}`);
-  }
-  return value;
 }
 
 export async function fetchStatsForDate(date: string): Promise<RawStatRow[]> {

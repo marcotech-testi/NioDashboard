@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DashboardNav } from "@/components/DashboardNav";
 import { FilterBar } from "@/components/FilterBar";
 import { KpiCards } from "@/components/KpiCards";
 import { TagChannelBarChart } from "@/components/TagChannelBarChart";
@@ -70,10 +71,11 @@ export default function DashboardPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      <header className="space-y-1">
+      <header className="space-y-3">
         <p className="text-xs uppercase tracking-widest text-text-muted">NIO</p>
         <h1 className="text-3xl font-semibold brand-gradient-text">Indicadores de Atendimento</h1>
         <p className="text-sm text-text-muted">Histórico de dados disponível a partir de {MIN_DATE_LABEL}.</p>
+        <DashboardNav />
       </header>
 
       <FilterBar
