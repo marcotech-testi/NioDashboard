@@ -29,16 +29,15 @@ export function isBeforeMinDate(dateStr: string): boolean {
 }
 
 /**
- * A API externa não respeitou initialDate/finalDate nos testes feitos durante
- * o planejamento (variar o range não mudou o resultado); o que muda o volume
- * retornado é o parâmetro `period`, funcionando como "últimos N dias a partir
- * de finalDate". Para montar a tendência diária, cada dia da janela é buscado
- * individualmente com period=1, e dias anteriores a MIN_DATE são descartados
- * sem chamar a API.
+ * `initialDate`/`finalDate` filtram corretamente quando `period` NÃO é
+ * enviado — testado ao vivo: dia 10 (1758) + dia 11 (753) bate exatamente
+ * com o range dos dois dias junto (2511). O problema todo era o parâmetro
+ * `period`, que "sequestra" o filtro de data (com period=1 sempre vazio,
+ * com period>=3 sempre o acumulado inteiro, ignorando as datas).
  *
- * `finalDate` já vem ancorado em América/São_Paulo (de `todayStr`); a
- * subtração de dias aqui é aritmética pura de calendário em UTC — isso é
- * seguro porque não há hora do dia envolvida, só dias inteiros.
+ * Cada dia da janela é buscado individualmente (sem period) — isso dá o
+ * total do período (somando) e a tendência dia a dia de graça, na mesma
+ * leva de chamadas. Dias antes de MIN_DATE são descartados sem chamar a API.
  */
 export function lookbackDates(period: number, finalDate: string): string[] {
   const dates: string[] = [];

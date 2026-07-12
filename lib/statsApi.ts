@@ -3,10 +3,6 @@ import { requireEnv } from "@/lib/env";
 
 const GROUPER_ONE = "tag";
 const GROUPER_TWO = "canal";
-/** A API sempre respondeu com apenas 1 dia de dado real independente do range
- * pedido; o parâmetro que efetivamente controla a janela é `period` (ver
- * lib/dateRules.ts). Aqui cada chamada busca sempre um único dia. */
-const SINGLE_DAY_PERIOD = 1;
 
 export class StatsApiError extends Error {
   status: number;
@@ -18,6 +14,13 @@ export class StatsApiError extends Error {
   }
 }
 
+/**
+ * Nunca manda `period` — testado ao vivo, esse parâmetro sequestra o filtro
+ * de data (`period=1` sempre devolve vazio; `period>=3` sempre devolve o
+ * acumulado inteiro desde o início do histórico, ignorando initialDate/
+ * finalDate). Sem `period`, initialDate=finalDate=date filtra corretamente
+ * só aquele dia (ver lib/dateRules.ts).
+ */
 export async function fetchStatsForDate(date: string): Promise<RawStatRow[]> {
   const baseUrl = requireEnv("STATS_API_BASE_URL");
   const token = requireEnv("STATS_API_TOKEN");
@@ -27,7 +30,6 @@ export async function fetchStatsForDate(date: string): Promise<RawStatRow[]> {
   url.searchParams.set("finalDate", date);
   url.searchParams.set("grouperOne", GROUPER_ONE);
   url.searchParams.set("grouperTwo", GROUPER_TWO);
-  url.searchParams.set("period", String(SINGLE_DAY_PERIOD));
   url.searchParams.set("token", token);
 
   const res = await fetch(url, { next: { revalidate: 60 } });

@@ -11,9 +11,9 @@ export const TAG_PREFIX = "NIO";
 /**
  * Filtra as linhas cujo `agrupador_1` começa com TAG_PREFIX (case-insensitive,
  * preservando o valor original para exibição), soma duplicatas de tag+canal
- * (o array de entrada pode conter uma chamada por dia do período) e recalcula
- * o percentual sobre o subconjunto NIO — `num_porcentagem` da API é relativo
- * ao total geral de todos os clientes, não serve para os KPIs da NIO.
+ * e recalcula o percentual sobre o subconjunto NIO — `num_porcentagem` da
+ * API é relativo ao total geral de todos os clientes, não serve para os
+ * KPIs da NIO.
  */
 export function normalizeNioRows(raw: RawStatRow[]): NioStatRow[] {
   const merged = new Map<string, { tag: string; channel: string; total: number }>();
