@@ -7,6 +7,7 @@ import { DistributionDonutChart } from "@/components/DistributionDonutChart";
 import { DistributionBarChart } from "@/components/DistributionBarChart";
 import { DeviceSearch } from "@/components/DeviceSearch";
 import { Spinner } from "@/components/Spinner";
+import { DeviceStatusModal } from "@/components/DeviceStatusModal";
 import type { EquipmentsSummary } from "@/types/devices";
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -24,6 +25,7 @@ export default function EquipmentsPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusModal, setStatusModal] = useState<"offline" | "unstable" | null>(null);
   const loadingRef = useRef(false);
 
   const load = useCallback(async (force: boolean) => {
@@ -58,22 +60,68 @@ export default function EquipmentsPage() {
 
   const generalCards = counts
     ? [
-        { label: "Total de dispositivos", value: counts.total.toLocaleString("pt-BR") },
-        { label: "Online", value: counts.online.toLocaleString("pt-BR") },
-        { label: "Offline", value: counts.offline.toLocaleString("pt-BR") },
-        { label: "Instáveis", value: counts.unstable.toLocaleString("pt-BR") },
-        { label: "% Online", value: formatPercent(counts.online, counts.total) },
-        { label: "% Offline", value: formatPercent(counts.offline, counts.total) },
+        {
+          label: "Total de dispositivos",
+          value: counts.total.toLocaleString("pt-BR"),
+          description: "Quantidade de equipamentos monitorados nesta base.",
+        },
+        {
+          label: "Online",
+          value: counts.online.toLocaleString("pt-BR"),
+          description: "Respondeu à última verificação de conectividade.",
+        },
+        {
+          label: "Offline",
+          value: counts.offline.toLocaleString("pt-BR"),
+          description: "Sem resposta — perdeu conexão com o servidor de gestão.",
+          onClick: () => setStatusModal("offline"),
+        },
+        {
+          label: "Instáveis",
+          value: counts.unstable.toLocaleString("pt-BR"),
+          description: "Oscilando entre online e offline com frequência.",
+          onClick: () => setStatusModal("unstable"),
+        },
+        {
+          label: "% Online",
+          value: formatPercent(counts.online, counts.total),
+          description: "Percentual do total de dispositivos.",
+        },
+        {
+          label: "% Offline",
+          value: formatPercent(counts.offline, counts.total),
+          description: "Percentual do total de dispositivos.",
+        },
       ]
     : [];
 
   const signalCards = signal
     ? [
-        { label: "Sinal bom", value: signal.good.toLocaleString("pt-BR") },
-        { label: "Sinal médio", value: signal.weak.toLocaleString("pt-BR") },
-        { label: "Sinal ruim", value: signal.bad.toLocaleString("pt-BR") },
-        { label: "Sem sinal (PON)", value: signal.noSignal.toLocaleString("pt-BR") },
-        { label: "Média RX", value: formatDbm(data?.averages.rxPower ?? null) },
+        {
+          label: "Sinal bom",
+          value: signal.good.toLocaleString("pt-BR"),
+          description: "Potência óptica (RX) acima de -27 dBm — sinal ideal.",
+        },
+        {
+          label: "Sinal médio",
+          value: signal.weak.toLocaleString("pt-BR"),
+          description: "RX entre -30 e -27 dBm — aceitável, mas vale acompanhar.",
+        },
+        {
+          label: "Sinal ruim",
+          value: signal.bad.toLocaleString("pt-BR"),
+          description: "RX abaixo de -30 dBm — risco de instabilidade ou perda de conexão.",
+        },
+        {
+          label: "Sem sinal (PON)",
+          value: signal.noSignal.toLocaleString("pt-BR"),
+          description: "Sem leitura de potência óptica — normalmente equipamento sem fibra.",
+        },
+        {
+          label: "Média RX",
+          value: formatDbm(data?.averages.rxPower ?? null),
+          description: "Potência óptica recebida média da base. Sinal é considerado bom acima de -27 dBm.",
+        },
       ]
     : [];
 
@@ -129,6 +177,8 @@ export default function EquipmentsPage() {
           <DistributionBarChart title="Equipamentos por firmware" data={data.distribution.firmware} />
         </div>
       )}
+
+      <DeviceStatusModal status={statusModal} onClose={() => setStatusModal(null)} />
     </main>
   );
 }

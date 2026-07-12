@@ -1,4 +1,4 @@
-import { fetchDeviceSearchPage } from "@/lib/flashmanApi";
+import { fetchDeviceSearchPage, fetchDeviceSearchPageByStatus } from "@/lib/flashmanApi";
 import { isIgnoredVendor } from "@/lib/deviceFilters";
 import type { DeviceProjection, NamedCount } from "@/types/devices";
 
@@ -24,6 +24,45 @@ export async function fetchAllDeviceProjections(): Promise<DeviceProjection[]> {
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
   return all;
+}
+
+/**
+ * Lista completa de dispositivos offline/instáveis (não só a contagem) —
+ * usada pelos cards clicáveis do HC. Contagens bem menores que a base
+ * inteira (centenas, não ~20 mil), então poucas páginas mesmo buscando tudo.
+ */
+export async function fetchAllDevicesByStatus(status: "offline" | "unstable"): Promise<DeviceProjection[]> {
+  const first = await fetchDeviceSearchPageByStatus(status, 1);
+  const all: DeviceProjection[] = [...first.devices];
+  const totalPages = first.totalPages;
+
+  let nextPage = 2;
+  async function worker() {
+    while (nextPage <= totalPages) {
+      const page = nextPage;
+      nextPage += 1;
+      const result = await fetchDeviceSearchPageByStatus(status, page);
+      all.push(...result.devices);
+    }
+  }
+
+  const workerCount = Math.min(CONCURRENCY, Math.max(totalPages - 1, 0));
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+
+  return all;
+}
+
+/**
+ * Mesma regra de escopo usada em aggregateDevices: com lista de inclusão
+ * ativa, só o que está nela; senão, base inteira menos fabricantes ignorados.
+ */
+export function filterToCurrentScope(
+  devices: DeviceProjection[],
+  trackedSerials?: Set<string>,
+): DeviceProjection[] {
+  return trackedSerials
+    ? devices.filter((device) => device.serial_tr069 != null && trackedSerials.has(device.serial_tr069.toUpperCase()))
+    : devices.filter((device) => !isIgnoredVendor(device.vendor));
 }
 
 export type DeviceAggregation = {
@@ -62,9 +101,7 @@ function countBy(devices: DeviceProjection[], key: "vendor" | "model" | "install
  * entra em jogo.
  */
 export function aggregateDevices(devices: DeviceProjection[], trackedSerials?: Set<string>): DeviceAggregation {
-  const relevant = trackedSerials
-    ? devices.filter((device) => device.serial_tr069 != null && trackedSerials.has(device.serial_tr069.toUpperCase()))
-    : devices.filter((device) => !isIgnoredVendor(device.vendor));
+  const relevant = filterToCurrentScope(devices, trackedSerials);
 
   const rxValues = relevant
     .map((device) => device.pon_rxpower)

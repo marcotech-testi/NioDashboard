@@ -70,6 +70,17 @@ export type NamedCount = {
   count: number;
 };
 
+export type DeviceStatusListItem = {
+  serialTr069: string | null;
+  vendor: string | null;
+  model: string | null;
+};
+
+export type DeviceStatusResponse = {
+  status: "offline" | "unstable";
+  devices: DeviceStatusListItem[];
+};
+
 export type EquipmentsSummary = {
   fetchedAt: string;
   counts: {

@@ -116,6 +116,36 @@ export async function fetchDeviceSearchPage(page: number): Promise<DeviceSearchP
   return (await res.json()) as DeviceSearchPage;
 }
 
+const STATUS_SEARCH_FIELDS = "serial_tr069;vendor;model";
+
+/**
+ * Página de dispositivos filtrados por status de conexão (`offline`/
+ * `unstable`) — testado ao vivo, esses dois filtram corretamente (diferente
+ * de `ponRxPower`/`externalReferenceData`, que estão quebrados nesta
+ * instância). Sem resultados, a API responde 404 — tratado como página
+ * vazia em vez de erro.
+ */
+export async function fetchDeviceSearchPageByStatus(
+  status: "offline" | "unstable",
+  page: number,
+): Promise<DeviceSearchPage> {
+  const params = new URLSearchParams({
+    fields: STATUS_SEARCH_FIELDS,
+    [status]: "true",
+    page: String(page),
+    pageLimit: String(PAGE_LIMIT),
+  });
+  try {
+    const res = await flashmanFetch("/api/v3/device/search/", params);
+    return (await res.json()) as DeviceSearchPage;
+  } catch (error) {
+    if (error instanceof FlashmanApiError && error.status === 404) {
+      return { success: true, message: "OK", devices: [], page, pageLimit: PAGE_LIMIT, totalPages: 0 };
+    }
+    throw error;
+  }
+}
+
 /**
  * Documento completo (não sanitizado) de um dispositivo pelo serial TR-069.
  * `null` quando não encontrado (404) — erros de fato ainda lançam.
