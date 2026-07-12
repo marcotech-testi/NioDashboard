@@ -17,6 +17,11 @@
 *.pem
 npm-debug.log*
 
+# planilhas com dados de clientes (PII) - nunca versionar
+Seriais.xlsx
+*.xlsx
+*.xls
+
 # vercel
 .vercel
 

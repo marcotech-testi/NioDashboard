@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FlashmanApiError, fetchConnectionStatus } from "@/lib/flashmanApi";
-import {
-  aggregateDevices,
-  fetchAllDeviceProjections,
-  fetchTrackedDeviceProjections,
-} from "@/lib/aggregateDevices";
+import { aggregateDevices, fetchAllDeviceProjections } from "@/lib/aggregateDevices";
 import { getEquipmentsSummary } from "@/lib/equipmentsCache";
-import { hasTrackedSerialsList, IGNORED_VENDORS, TRACKED_SERIALS } from "@/lib/deviceFilters";
-import type { ConnectionStatusCounts, DeviceProjection, EquipmentsSummary } from "@/types/devices";
+import { getTrackedSerialsSet, hasTrackedSerialsList, IGNORED_VENDORS } from "@/lib/deviceFilters";
+import type { ConnectionStatusCounts, DeviceProjection, EquipmentsSummary, SignalQuality } from "@/types/devices";
+
+/** Cada chamada de contagem filtrada por serial vira uma URL com N `serial=`;
+ * mantido pequeno pra nunca esbarrar em limite de tamanho de URL. */
+const SERIAL_CHUNK_SIZE = 100;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
 
 function subtractCounts(a: ConnectionStatusCounts, b: ConnectionStatusCounts): ConnectionStatusCounts {
   return {
@@ -18,6 +24,31 @@ function subtractCounts(a: ConnectionStatusCounts, b: ConnectionStatusCounts): C
   };
 }
 
+function sumCounts(items: ConnectionStatusCounts[]): ConnectionStatusCounts {
+  return items.reduce(
+    (acc, item) => ({
+      totalCount: acc.totalCount + item.totalCount,
+      onlineCount: acc.onlineCount + item.onlineCount,
+      unstableCount: acc.unstableCount + item.unstableCount,
+      offlineCount: acc.offlineCount + item.offlineCount,
+    }),
+    { totalCount: 0, onlineCount: 0, unstableCount: 0, offlineCount: 0 },
+  );
+}
+
+/** Soma a contagem de um conjunto de seriais em lotes (a API não aceita uma
+ * lista arbitrariamente grande em query string). */
+async function fetchConnectionStatusForSerials(
+  signal: SignalQuality | undefined,
+  serials: string[],
+): Promise<ConnectionStatusCounts> {
+  if (serials.length === 0) return { totalCount: 0, onlineCount: 0, unstableCount: 0, offlineCount: 0 };
+  const results = await Promise.all(
+    chunk(serials, SERIAL_CHUNK_SIZE).map((batch) => fetchConnectionStatus(signal, { serials: batch })),
+  );
+  return sumCounts(results);
+}
+
 function summaryFromCounts(
   counts: {
     total: ConnectionStatusCounts;
@@ -26,9 +57,9 @@ function summaryFromCounts(
     bad: ConnectionStatusCounts;
     noSignal: ConnectionStatusCounts;
   },
-  devices: DeviceProjection[],
+  aggregation: ReturnType<typeof aggregateDevices>,
+  scannedDevices: number,
 ): EquipmentsSummary {
-  const aggregation = aggregateDevices(devices);
   return {
     fetchedAt: new Date().toISOString(),
     counts: {
@@ -45,7 +76,7 @@ function summaryFromCounts(
     },
     averages: aggregation.averages,
     distribution: aggregation.distribution,
-    scannedDevices: devices.length,
+    scannedDevices,
   };
 }
 
@@ -74,23 +105,67 @@ async function computeFromFullFleet(): Promise<EquipmentsSummary> {
       bad: subtractCounts(bad, ignoredBad),
       noSignal: subtractCounts(noSignal, ignoredNoSignal),
     },
-    devices,
+    aggregateDevices(devices),
+    devices.length,
   );
 }
 
-/** Só os dispositivos em TRACKED_SERIALS (lib/deviceFilters.ts) — lista de inclusão. */
+function fleetSerials(devices: DeviceProjection[]): string[] {
+  return devices
+    .map((device) => device.serial_tr069)
+    .filter((serial): serial is string => typeof serial === "string" && serial.length > 0)
+    .map((serial) => serial.toUpperCase());
+}
+
+/**
+ * Só os dispositivos em TRACKED_SERIALS (lib/deviceFilters.ts) — lista de
+ * inclusão, tipicamente quase do tamanho da base inteira (~18 mil de ~19,8
+ * mil). Reaproveita a MESMA varredura paginada do modo "base inteira" (é
+ * onde os seriais de cada dispositivo aparecem) e filtra o resultado; para
+ * as contagens agregadas, consulta em lotes só o lado MENOR — rastreados ou
+ * excluídos, o que for menor — e deriva o outro por subtração do total
+ * geral, em vez de sempre consultar os ~18 mil rastreados.
+ */
 async function computeFromTrackedSerials(): Promise<EquipmentsSummary> {
-  const serials = { serials: TRACKED_SERIALS };
+  const trackedSet = getTrackedSerialsSet();
+
   const [total, good, weak, bad, noSignal, devices] = await Promise.all([
-    fetchConnectionStatus(undefined, serials),
-    fetchConnectionStatus("good", serials),
-    fetchConnectionStatus("weak", serials),
-    fetchConnectionStatus("bad", serials),
-    fetchConnectionStatus("noSignal", serials),
-    fetchTrackedDeviceProjections(TRACKED_SERIALS),
+    fetchConnectionStatus(),
+    fetchConnectionStatus("good"),
+    fetchConnectionStatus("weak"),
+    fetchConnectionStatus("bad"),
+    fetchConnectionStatus("noSignal"),
+    fetchAllDeviceProjections(),
   ]);
 
-  return summaryFromCounts({ total, good, weak, bad, noSignal }, devices);
+  const serialsInFleet = fleetSerials(devices);
+  const excluded = serialsInFleet.filter((serial) => !trackedSet.has(serial));
+  const tracked = serialsInFleet.filter((serial) => trackedSet.has(serial));
+  const useExcluded = excluded.length <= tracked.length;
+  const querySerials = useExcluded ? excluded : tracked;
+
+  const [sideTotal, sideGood, sideWeak, sideBad, sideNoSignal] = await Promise.all([
+    fetchConnectionStatusForSerials(undefined, querySerials),
+    fetchConnectionStatusForSerials("good", querySerials),
+    fetchConnectionStatusForSerials("weak", querySerials),
+    fetchConnectionStatusForSerials("bad", querySerials),
+    fetchConnectionStatusForSerials("noSignal", querySerials),
+  ]);
+
+  const resolve = (full: ConnectionStatusCounts, side: ConnectionStatusCounts) =>
+    useExcluded ? subtractCounts(full, side) : side;
+
+  return summaryFromCounts(
+    {
+      total: resolve(total, sideTotal),
+      good: resolve(good, sideGood),
+      weak: resolve(weak, sideWeak),
+      bad: resolve(bad, sideBad),
+      noSignal: resolve(noSignal, sideNoSignal),
+    },
+    aggregateDevices(devices, trackedSet),
+    devices.length,
+  );
 }
 
 function computeEquipmentsSummary(): Promise<EquipmentsSummary> {
@@ -100,11 +175,11 @@ function computeEquipmentsSummary(): Promise<EquipmentsSummary> {
 /**
  * Proxy server-side para a API do Flashman. Dois modos, ver
  * lib/deviceFilters.ts:
- * - TRACKED_SERIALS vazia (padrão): varre a base inteira (~19.800
+ * - Lista de inclusão vazia (padrão): varre a base inteira (~19.800
  *   dispositivos, não cabe em uma única chamada — máx. 50/página) menos os
  *   fabricantes ignorados.
- * - TRACKED_SERIALS preenchida: os indicadores passam a ser calculados só a
- *   partir desses seriais específicos, buscados um a um.
+ * - Lista de inclusão preenchida (data/tracked-serials.txt): os indicadores
+ *   passam a ser calculados só a partir desses seriais específicos.
  *
  * Cache stale-while-revalidate (lib/equipmentsCache.ts): fora de
  * `?force=true`, nenhuma requisição espera a sincronização completa —

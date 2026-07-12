@@ -90,7 +90,7 @@ export async function fetchConnectionStatus(
   const params = new URLSearchParams();
   if (signal) params.set("ponRxPower", signal);
   for (const vendor of vendors) params.append("vendor", vendor);
-  for (const serial of serials) params.append("serial", serial);
+  for (const serial of serials) params.append("serial", serial.toUpperCase());
   // `or` combina campos DIFERENTES com OU; múltiplos valores do MESMO campo
   // (ex.: vários `serial=`) já são OU entre si por padrão — testado ao vivo.
   if (vendors.length > 0 && serials.length > 0) params.set("or", "true");
@@ -116,12 +116,19 @@ export async function fetchDeviceSearchPage(page: number): Promise<DeviceSearchP
   return (await res.json()) as DeviceSearchPage;
 }
 
-/** Documento completo (não sanitizado) de um dispositivo pelo serial TR-069.
- * `null` quando não encontrado (404) — erros de fato ainda lançam. */
+/**
+ * Documento completo (não sanitizado) de um dispositivo pelo serial TR-069.
+ * `null` quando não encontrado (404) — erros de fato ainda lançam.
+ *
+ * A API é case-sensitive e guarda o serial em maiúsculo (confirmado ao vivo:
+ * o mesmo serial em minúsculo dá 404) — normalizamos aqui pra não depender
+ * de quem chama lembrar disso.
+ */
 export async function fetchDeviceBySerial(serial: string): Promise<Record<string, unknown> | null> {
+  const normalized = serial.trim().toUpperCase();
   const params = new URLSearchParams();
   try {
-    const res = await flashmanFetch(`/api/v3/device/serial-tr069/${encodeURIComponent(serial)}/`, params);
+    const res = await flashmanFetch(`/api/v3/device/serial-tr069/${encodeURIComponent(normalized)}/`, params);
     const data = await res.json();
     return (data.device as Record<string, unknown>) ?? null;
   } catch (error) {
