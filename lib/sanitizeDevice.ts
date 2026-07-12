@@ -31,6 +31,14 @@ function sanitizeWans(raw: unknown): DeviceWanDetail[] {
   });
 }
 
+function wifiStatusLabel(w: Record<string, unknown>): string {
+  const status = str(w.status);
+  if (status) return status;
+  // Alguns formatos de retorno não trazem `status`, só `radio_state`.
+  if (typeof w.radio_state === "boolean") return w.radio_state ? "Ativo" : "Inativo";
+  return "desconhecido";
+}
+
 function sanitizeWifi(raw: unknown): DeviceWifiDetail[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((wifi) => {
@@ -39,7 +47,7 @@ function sanitizeWifi(raw: unknown): DeviceWifiDetail[] {
       ssid: str(w.ssid) ?? "",
       band: wifiBandLabel(w.type),
       channel: str(w.channel) ?? "auto",
-      status: str(w.status) ?? "desconhecido",
+      status: wifiStatusLabel(w),
     };
   });
 }

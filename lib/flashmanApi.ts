@@ -136,3 +136,43 @@ export async function fetchDeviceBySerial(serial: string): Promise<Record<string
     throw error;
   }
 }
+
+/**
+ * Documento completo (não sanitizado) de um dispositivo pela referência
+ * externa (`external_reference.data` — ex.: número de contrato).
+ *
+ * O parâmetro dedicado `externalReferenceData` do endpoint de busca não
+ * filtra nada nesta instância — testado ao vivo: com ou sem ele (e com
+ * qualquer valor, inclusive um que não existe), a API sempre devolve o
+ * mesmo primeiro dispositivo da base. O parâmetro `query` (busca textual
+ * genérica) funciona, mas casa por substring em vários campos (por isso o
+ * resultado é conferido abaixo) e o documento que ele retorna não tem
+ * `online_status` nem alguns campos de wifi presentes no endpoint de busca
+ * por serial — então usamos `query` só pra achar o serial certo, e
+ * delegamos pra fetchDeviceBySerial pegar o documento completo e
+ * consistente.
+ */
+export async function fetchDeviceByExternalReference(reference: string): Promise<Record<string, unknown> | null> {
+  const target = reference.trim();
+  const params = new URLSearchParams({ query: target, pageLimit: "5" });
+
+  // Sem resultado, a busca responde 404 (não 200 com array vazio).
+  let devices: Record<string, unknown>[];
+  try {
+    const res = await flashmanFetch("/api/v3/device/search/", params);
+    const data = await res.json();
+    devices = (data.devices as Record<string, unknown>[]) ?? [];
+  } catch (error) {
+    if (error instanceof FlashmanApiError && error.status === 404) return null;
+    throw error;
+  }
+
+  const match = devices.find((device) => {
+    const ref = device.external_reference as Record<string, unknown> | undefined;
+    return typeof ref?.data === "string" && ref.data === target;
+  });
+  const serial = match?.serial_tr069;
+  if (typeof serial !== "string" || !serial) return null;
+
+  return fetchDeviceBySerial(serial);
+}

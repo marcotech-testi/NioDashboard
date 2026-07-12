@@ -17,14 +17,22 @@ function formatDbm(value: number | null): string {
   return value === null ? "—" : `${value.toLocaleString("pt-BR")} dBm`;
 }
 
+type SearchMode = "serial" | "contract";
+
+const MODE_LABELS: Record<SearchMode, { label: string; placeholder: string; param: string }> = {
+  serial: { label: "Serial", placeholder: "Ex.: 48575443FFAD22A6", param: "serial" },
+  contract: { label: "Contrato", placeholder: "Ex.: 7362", param: "contract" },
+};
+
 export function DeviceSearch() {
-  const [serial, setSerial] = useState("");
+  const [mode, setMode] = useState<SearchMode>("serial");
+  const [query, setQuery] = useState("");
   const [device, setDevice] = useState<DeviceDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function search() {
-    const trimmed = serial.trim();
+    const trimmed = query.trim();
     if (!trimmed) return;
 
     setLoading(true);
@@ -32,7 +40,8 @@ export function DeviceSearch() {
     setDevice(null);
 
     try {
-      const res = await fetch(`/api/equipamentos/dispositivo?serial=${encodeURIComponent(trimmed)}`);
+      const param = MODE_LABELS[mode].param;
+      const res = await fetch(`/api/equipamentos/dispositivo?${param}=${encodeURIComponent(trimmed)}`);
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "Falha ao buscar dispositivo.");
       setDevice(body as DeviceDetail);
@@ -45,20 +54,40 @@ export function DeviceSearch() {
 
   return (
     <div className="card p-5 space-y-4">
-      <h3 className="text-sm font-medium text-text-muted">Buscar dispositivo por serial TR-069</h3>
+      <h3 className="text-sm font-medium text-text-muted">Buscar dispositivo</h3>
       <div className="flex flex-wrap gap-2">
+        <div className="flex gap-1 bg-surface-hover border border-border rounded-lg p-1">
+          {(Object.keys(MODE_LABELS) as SearchMode[]).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => {
+                setMode(option);
+                setDevice(null);
+                setError(null);
+              }}
+              className={
+                mode === option
+                  ? "brand-gradient text-white px-3 py-1.5 rounded-md text-sm font-medium"
+                  : "px-3 py-1.5 rounded-md text-sm text-text-muted hover:text-text transition-colors"
+              }
+            >
+              {MODE_LABELS[option].label}
+            </button>
+          ))}
+        </div>
         <input
           type="text"
-          value={serial}
-          onChange={(event) => setSerial(event.target.value)}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => event.key === "Enter" && search()}
-          placeholder="Ex.: 48575443FFAD22A6"
+          placeholder={MODE_LABELS[mode].placeholder}
           className="flex-1 min-w-48 bg-surface-hover border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-brand-green/60"
         />
         <button
           type="button"
           onClick={search}
-          disabled={loading || !serial.trim()}
+          disabled={loading || !query.trim()}
           className="brand-gradient text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {loading ? "Buscando…" : "Buscar"}
