@@ -148,7 +148,9 @@ export function DeviceSearch() {
             {device.lastContact && (
               <div>
                 <p className="text-xs text-text-muted uppercase tracking-wide">Último contato</p>
-                <p>{new Date(device.lastContact).toLocaleString("pt-BR")}</p>
+                <p>
+                  {new Date(device.lastContact).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                </p>
               </div>
             )}
           </div>

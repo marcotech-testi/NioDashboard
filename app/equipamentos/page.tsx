@@ -88,7 +88,9 @@ export default function EquipmentsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-text-muted">
-          {data ? `Atualizado às ${new Date(data.fetchedAt).toLocaleTimeString("pt-BR")}` : ""}
+          {data
+            ? `Atualizado às ${new Date(data.fetchedAt).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" })}`
+            : ""}
         </p>
         <button
           type="button"

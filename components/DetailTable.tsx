@@ -47,7 +47,8 @@ export function DetailTable({ rows }: DetailTableProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `nio-atendimentos-${new Date().toISOString().slice(0, 10)}.csv`;
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+    a.download = `nio-atendimentos-${today}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
