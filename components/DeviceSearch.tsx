@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/Spinner";
 import type { DeviceDetail } from "@/types/devices";
 
 function formatUptime(seconds: number | null): string {
@@ -88,8 +89,9 @@ export function DeviceSearch() {
           type="button"
           onClick={search}
           disabled={loading || !query.trim()}
-          className="brand-gradient text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 brand-gradient text-white px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
         >
+          {loading && <Spinner className="h-4 w-4 text-current" />}
           {loading ? "Buscando…" : "Buscar"}
         </button>
       </div>

@@ -8,6 +8,7 @@ import { TagChannelBarChart } from "@/components/TagChannelBarChart";
 import { ChannelDonutChart } from "@/components/ChannelDonutChart";
 import { TrendLineChart } from "@/components/TrendLineChart";
 import { DetailTable } from "@/components/DetailTable";
+import { Spinner } from "@/components/Spinner";
 import { recomputePercentages } from "@/lib/filterNioTags";
 import { MIN_DATE } from "@/lib/dateRules";
 import type { PeriodPreset, StatsResponse } from "@/types/stats";
@@ -89,7 +90,12 @@ export default function DashboardPage() {
         onTagsChange={setSelectedTags}
       />
 
-      {loading && <p className="text-text-muted text-sm">Carregando indicadores…</p>}
+      {loading && (
+        <div className="flex items-center gap-2 text-text-muted text-sm">
+          <Spinner />
+          Carregando indicadores…
+        </div>
+      )}
 
       {!loading && error && (
         <div className="card p-5 border-semantic-warning/40">

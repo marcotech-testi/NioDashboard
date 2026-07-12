@@ -6,6 +6,7 @@ import { StatCardGrid } from "@/components/StatCardGrid";
 import { DistributionDonutChart } from "@/components/DistributionDonutChart";
 import { DistributionBarChart } from "@/components/DistributionBarChart";
 import { DeviceSearch } from "@/components/DeviceSearch";
+import { Spinner } from "@/components/Spinner";
 import type { EquipmentsSummary } from "@/types/devices";
 
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -96,13 +97,19 @@ export default function EquipmentsPage() {
           type="button"
           onClick={() => load(true)}
           disabled={syncing || loading}
-          className="text-sm px-4 py-2 rounded-lg border border-border hover:border-brand-green/60 text-text-muted hover:text-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg border border-border hover:border-brand-green/60 text-text-muted hover:text-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
+          {syncing && <Spinner className="h-4 w-4 text-current" />}
           {syncing ? "Sincronizando… pode levar até 1 minuto" : "Atualizar agora"}
         </button>
       </div>
 
-      {loading && !data && <p className="text-text-muted text-sm">Carregando indicadores…</p>}
+      {loading && !data && (
+        <div className="flex items-center gap-2 text-text-muted text-sm">
+          <Spinner />
+          Carregando indicadores…
+        </div>
+      )}
 
       {!loading && error && (
         <div className="card p-5 border-semantic-warning/40">
