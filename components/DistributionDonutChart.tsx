@@ -15,7 +15,16 @@ export function DistributionDonutChart({ title, data }: DistributionDonutChartPr
       <h3 className="text-sm font-medium text-text-muted mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height={360}>
         <PieChart>
-          <Pie data={data} dataKey="count" nameKey="name" innerRadius={80} outerRadius={130} paddingAngle={2}>
+          <Pie
+            data={data}
+            dataKey="count"
+            nameKey="name"
+            innerRadius={80}
+            outerRadius={130}
+            paddingAngle={2}
+            minAngle={4}
+            isAnimationActive={false}
+          >
             {data.map((entry) => (
               <Cell key={entry.name} fill={colorForKey(entry.name)} stroke="#0c0f0d" />
             ))}

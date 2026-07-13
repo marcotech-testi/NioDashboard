@@ -34,11 +34,13 @@ export function StatCardGrid({ cards }: StatCardGridProps) {
             type={card.onClick ? "button" : undefined}
             onClick={card.onClick}
             className={
-              "card p-5 relative overflow-hidden text-left w-full" +
+              "card p-5 relative text-left w-full" +
               (card.onClick ? " hover:border-brand-green/60 transition-colors cursor-pointer" : "")
             }
           >
-            <div className="absolute inset-x-0 top-0 h-1 brand-gradient" />
+            {/* overflow-hidden não pode ir no card: cortaria o tooltip, que
+             * precisa extrapolar a largura do card para ser legível. */}
+            <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl brand-gradient" />
             <div className="flex items-center gap-1.5 mb-2">
               <p className="text-xs uppercase tracking-wide text-text-muted">{card.label}</p>
               {card.description && (

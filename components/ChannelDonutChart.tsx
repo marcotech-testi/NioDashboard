@@ -27,6 +27,8 @@ export function ChannelDonutChart({ rows }: ChannelDonutChartProps) {
             innerRadius={80}
             outerRadius={130}
             paddingAngle={2}
+            minAngle={4}
+            isAnimationActive={false}
           >
             {data.map((entry) => (
               <Cell key={entry.channel} fill={colorForKey(entry.channel)} stroke="#0c0f0d" />
